@@ -1,0 +1,139 @@
+{
+  "name": "Barangay System: New Resident Welcome Pipeline",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "resident-created",
+        "options": {}
+      },
+      "id": "trigger-node",
+      "name": "Laravel Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [100, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.semaphore.co/api/v4/messages",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/x-www-form-urlencoded"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SEMAPHORE_API_KEY }}"
+            },
+            {
+              "name": "number",
+              "value": "={{ $json.body.contact_number }}"
+            },
+            {
+              "name": "message",
+              "value": "=Mabuhay {{ $json.body.first_name }} {{ $json.body.last_name }}! Welcome to Barangay Information System. Your resident profile has been successfully registered under {{ $json.body.purok_name }}."
+            },
+            {
+              "name": "sendername",
+              "value": "BRGY"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "sms-node",
+      "name": "Send Semaphore SMS",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [340, 180]
+    },
+    {
+      "parameters": {
+        "fromEmail": "noreply@barangay.gov.ph",
+        "toEmail": "={{ $json.body.email }}",
+        "subject": "Welcome to Barangay Information System",
+        "html": "=<h3>Mabuhay, {{ $json.body.first_name }} {{ $json.body.last_name }}!</h3><p>Your resident record has been officially registered at our Barangay Hall under <strong>{{ $json.body.purok_name }}</strong>.</p><p>You can now request documents online, receive immediate public advisories, and track incident blotters.</p><br><p>Best regards,<br>Barangay Council</p>",
+        "options": {}
+      },
+      "id": "email-node",
+      "name": "Send Welcome Email",
+      "type": "n8n-nodes-base.email",
+      "typeVersion": 1,
+      "position": [340, 380]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:8000/api/v1/webhooks/log-result",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Webhook-Secret",
+              "value": "barangay_n8n_secret_2026"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"workflow_name\": \"new-resident-welcome\",\n  \"status\": \"success\",\n  \"payload\": {{ JSON.stringify($node[\"Laravel Webhook Trigger\"].json.body) }},\n  \"response\": \"SMS dispatched to \" + $node[\"Laravel Webhook Trigger\"].json.body.contact_number + \" and Email to \" + $node[\"Laravel Webhook Trigger\"].json.body.email\n}",
+        "options": {}
+      },
+      "id": "log-success-node",
+      "name": "Log Success Callback",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [600, 300]
+    }
+  ],
+  "connections": {
+    "Laravel Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "Send Semaphore SMS",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Send Welcome Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Semaphore SMS": {
+      "main": [
+        [
+          {
+            "node": "Log Success Callback",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Welcome Email": {
+      "main": [
+        [
+          {
+            "node": "Log Success Callback",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {}
+}

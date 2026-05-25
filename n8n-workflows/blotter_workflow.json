@@ -1,0 +1,184 @@
+{
+  "name": "Barangay System: Blotter & Incident Records Pipeline",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "blotter-status",
+        "options": {}
+      },
+      "id": "trigger-node",
+      "name": "Laravel Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [100, 300]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "value1": "={{ $json.body.new_status }}",
+              "value2": "filed",
+              "operation": "equal"
+            },
+            {
+              "value1": "={{ $json.body.new_status }}",
+              "value2": "under_investigation",
+              "operation": "equal"
+            },
+            {
+              "value1": "={{ $json.body.new_status }}",
+              "value2": "settled",
+              "operation": "equal"
+            }
+          ]
+        }
+      },
+      "id": "switch-node",
+      "name": "Route by Case Status",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 1,
+      "position": [320, 300]
+    },
+    {
+      "parameters": {
+        "fromEmail": "blotters-noreply@barangay.gov.ph",
+        "toEmail": "={{ $node[\"Laravel Webhook Trigger\"].json.body.officer_email || 'desk@barangay.gov.ph' }}",
+        "subject": "=New Blotter Case Filed: {{ $node[\"Laravel Webhook Trigger\"].json.body.blotter_number }}",
+        "html": "=<h3>New Blotter Incident Logged</h3><p><strong>Case Number:</strong> {{ $node[\"Laravel Webhook Trigger\"].json.body.blotter_number }}</p><p><strong>Incident Type:</strong> {{ $node[\"Laravel Webhook Trigger\"].json.body.incident_type }}</p><p><strong>Location:</strong> {{ $node[\"Laravel Webhook Trigger\"].json.body.incident_location }}</p><p><strong>Date:</strong> {{ $node[\"Laravel Webhook Trigger\"].json.body.incident_date }}</p><p>Please review and assign a hearing date if required.</p>",
+        "options": {}
+      },
+      "id": "filed-email",
+      "name": "Officer Email: Filed",
+      "type": "n8n-nodes-base.email",
+      "typeVersion": 1,
+      "position": [560, 100]
+    },
+    {
+      "parameters": {
+        "fromEmail": "blotters-noreply@barangay.gov.ph",
+        "toEmail": "={{ $node[\"Laravel Webhook Trigger\"].json.body.officer_email || 'desk@barangay.gov.ph' }}",
+        "subject": "=Update on Case {{ $node[\"Laravel Webhook Trigger\"].json.body.blotter_number }}: Under Investigation",
+        "html": "=<h3>Blotter Status Escalated</h3><p><strong>Case Number:</strong> {{ $node[\"Laravel Webhook Trigger\"].json.body.blotter_number }}</p><p><strong>New Status:</strong> Under Active Investigation</p><p>Assigned Officer <strong>{{ $node[\"Laravel Webhook Trigger\"].json.body.assigned_officer }}</strong> has updated the case files. Please prepare for hearing summons as scheduled.</p>",
+        "options": {}
+      },
+      "id": "updated-email",
+      "name": "Email: Under Investigation",
+      "type": "n8n-nodes-base.email",
+      "typeVersion": 1,
+      "position": [560, 260]
+    },
+    {
+      "parameters": {
+        "fromEmail": "blotters-noreply@barangay.gov.ph",
+        "toEmail": "={{ $node[\"Laravel Webhook Trigger\"].json.body.officer_email || 'desk@barangay.gov.ph' }}",
+        "subject": "=Blotter Case Resolved: {{ $node[\"Laravel Webhook Trigger\"].json.body.blotter_number }}",
+        "html": "=<h3>Incident Case Marked as Settled</h3><p><strong>Case Number:</strong> {{ $node[\"Laravel Webhook Trigger\"].json.body.blotter_number }}</p><p><strong>Settlement Details:</strong> {{ $node[\"Laravel Webhook Trigger\"].json.body.settlement_details }}</p><p>A formal amicable settlement has been signed by the parties and certified by Officer {{ $node[\"Laravel Webhook Trigger\"].json.body.assigned_officer }}.</p>",
+        "options": {}
+      },
+      "id": "settled-email",
+      "name": "Email: Amicable Settlement",
+      "type": "n8n-nodes-base.email",
+      "typeVersion": 1,
+      "position": [560, 420]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:8000/api/v1/webhooks/log-result",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Webhook-Secret",
+              "value": "barangay_n8n_secret_2026"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"workflow_name\": \"blotter-status-alert\",\n  \"status\": \"success\",\n  \"payload\": {{ JSON.stringify($node[\"Laravel Webhook Trigger\"].json.body) }},\n  \"response\": \"Case status updated to: \" + $node[\"Laravel Webhook Trigger\"].json.body.new_status + \" for Case Number: \" + $node[\"Laravel Webhook Trigger\"].json.body.blotter_number\n}",
+        "options": {}
+      },
+      "id": "callback-node",
+      "name": "Log Result Callback",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [800, 260]
+    }
+  ],
+  "connections": {
+    "Laravel Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "Route by Case Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route by Case Status": {
+      "main": [
+        [
+          {
+            "node": "Officer Email: Filed",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Email: Under Investigation",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Email: Amicable Settlement",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Officer Email: Filed": {
+      "main": [
+        [
+          {
+            "node": "Log Result Callback",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Email: Under Investigation": {
+      "main": [
+        [
+          {
+            "node": "Log Result Callback",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Email: Amicable Settlement": {
+      "main": [
+        [
+          {
+            "node": "Log Result Callback",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {}
+}

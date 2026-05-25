@@ -1,0 +1,181 @@
+{
+  "name": "Barangay System: Document Request Notification Pipeline",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "document-status",
+        "options": {}
+      },
+      "id": "trigger-node",
+      "name": "Laravel Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [100, 300]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "value1": "={{ $json.body.status }}",
+              "value2": "pending",
+              "operation": "equal"
+            },
+            {
+              "value1": "={{ $json.body.status }}",
+              "value2": "approved",
+              "operation": "equal"
+            },
+            {
+              "value1": "={{ $json.body.status }}",
+              "value2": "rejected",
+              "operation": "equal"
+            },
+            {
+              "value1": "={{ $json.body.status }}",
+              "value2": "released",
+              "operation": "equal"
+            }
+          ]
+        }
+      },
+      "id": "switch-node",
+      "name": "Route by Status",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 1,
+      "position": [300, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.semaphore.co/api/v4/messages",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            { "name": "apikey", "value": "={{ $env.SEMAPHORE_API_KEY }}" },
+            { "name": "number", "value": "={{ $node[\"Laravel Webhook Trigger\"].json.body.resident_phone }}" },
+            { "name": "message", "value": "=Hi {{ $node[\"Laravel Webhook Trigger\"].json.body.resident_name }}. Your request for {{ $node[\"Laravel Webhook Trigger\"].json.body.document_type }} has been received and is now pending review. Control No: {{ $node[\"Laravel Webhook Trigger\"].json.body.control_number }}" },
+            { "name": "sendername", "value": "BRGY" }
+          ]
+        }
+      },
+      "id": "pending-sms",
+      "name": "SMS: Filed Request",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [540, 100]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.semaphore.co/api/v4/messages",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            { "name": "apikey", "value": "={{ $env.SEMAPHORE_API_KEY }}" },
+            { "name": "number", "value": "={{ $node[\"Laravel Webhook Trigger\"].json.body.resident_phone }}" },
+            { "name": "message", "value": "=Mabuhay {{ $node[\"Laravel Webhook Trigger\"].json.body.resident_name }}. Your request for {{ $node[\"Laravel Webhook Trigger\"].json.body.document_type }} (Control No: {{ $node[\"Laravel Webhook Trigger\"].json.body.control_number }}) has been APPROVED. You may now pick it up at the Barangay Hall." },
+            { "name": "sendername", "value": "BRGY" }
+          ]
+        }
+      },
+      "id": "approved-sms",
+      "name": "SMS: Approved",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [540, 220]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.semaphore.co/api/v4/messages",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            { "name": "apikey", "value": "={{ $env.SEMAPHORE_API_KEY }}" },
+            { "name": "number", "value": "={{ $node[\"Laravel Webhook Trigger\"].json.body.resident_phone }}" },
+            { "name": "message", "value": "=Hi {{ $node[\"Laravel Webhook Trigger\"].json.body.resident_name }}. Regrettably, your request for {{ $node[\"Laravel Webhook Trigger\"].json.body.document_type }} (Control No: {{ $node[\"Laravel Webhook Trigger\"].json.body.control_number }}) has been REJECTED. Reason: {{ $node[\"Laravel Webhook Trigger\"].json.body.rejection_reason }}." },
+            { "name": "sendername", "value": "BRGY" }
+          ]
+        }
+      },
+      "id": "rejected-sms",
+      "name": "SMS: Rejected",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [540, 340]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.semaphore.co/api/v4/messages",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            { "name": "apikey", "value": "={{ $env.SEMAPHORE_API_KEY }}" },
+            { "name": "number", "value": "={{ $node[\"Laravel Webhook Trigger\"].json.body.resident_phone }}" },
+            { "name": "message", "value": "=Hi {{ $node[\"Laravel Webhook Trigger\"].json.body.resident_name }}. Your {{ $node[\"Laravel Webhook Trigger\"].json.body.document_type }} (Control No: {{ $node[\"Laravel Webhook Trigger\"].json.body.control_number }}) has been RELEASED. Receipt details have been sent to your email." },
+            { "name": "sendername", "value": "BRGY" }
+          ]
+        }
+      },
+      "id": "released-sms",
+      "name": "SMS: Released",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [540, 460]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:8000/api/v1/webhooks/log-result",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "X-Webhook-Secret", "value": "barangay_n8n_secret_2026" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"workflow_name\": \"document-status-notifier\",\n  \"status\": \"success\",\n  \"payload\": {{ JSON.stringify($node[\"Laravel Webhook Trigger\"].json.body) }},\n  \"response\": \"Notification processed for status: \" + $node[\"Laravel Webhook Trigger\"].json.body.status + \" for Control No: \" + $node[\"Laravel Webhook Trigger\"].json.body.control_number\n}"
+      },
+      "id": "callback-node",
+      "name": "Log Result Callback",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [800, 280]
+    }
+  ],
+  "connections": {
+    "Laravel Webhook Trigger": {
+      "main": [
+        [
+          { "node": "Route by Status", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Route by Status": {
+      "main": [
+        [ { "node": "SMS: Filed Request", "type": "main", "index": 0 } ],
+        [ { "node": "SMS: Approved", "type": "main", "index": 0 } ],
+        [ { "node": "SMS: Rejected", "type": "main", "index": 0 } ],
+        [ { "node": "SMS: Released", "type": "main", "index": 0 } ]
+      ]
+    },
+    "SMS: Filed Request": {
+      "main": [ [ { "node": "Log Result Callback", "type": "main", "index": 0 } ] ]
+    },
+    "SMS: Approved": {
+      "main": [ [ { "node": "Log Result Callback", "type": "main", "index": 0 } ] ]
+    },
+    "SMS: Rejected": {
+      "main": [ [ { "node": "Log Result Callback", "type": "main", "index": 0 } ] ]
+    },
+    "SMS: Released": {
+      "main": [ [ { "node": "Log Result Callback", "type": "main", "index": 0 } ] ]
+    }
+  },
+  "active": true,
+  "settings": {}
+}

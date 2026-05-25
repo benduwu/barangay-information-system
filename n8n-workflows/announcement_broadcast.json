@@ -1,0 +1,166 @@
+{
+  "name": "Barangay System: Announcement Broadcast Blaster",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "announcement",
+        "options": {}
+      },
+      "id": "trigger-node",
+      "name": "Laravel Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [100, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = items[0].json.body;\nconst residents = body.target_resident_ids || [];\n\n// Transform array to standard n8n objects for looping\nreturn residents.map(id => ({\n  json: {\n    announcement_id: body.announcement_id,\n    title: body.title,\n    content: body.content,\n    priority: body.priority,\n    resident_id: id\n  }\n}));"
+      },
+      "id": "parse-residents",
+      "name": "Split into Loop Items",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [320, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=http://localhost:8000/api/v1/residents/{{ $json.resident_id }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer YOUR_ADMIN_BEARER_TOKEN"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "fetch-resident-details",
+      "name": "Fetch Resident Profile",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [520, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.semaphore.co/api/v4/messages",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            { "name": "apikey", "value": "={{ $env.SEMAPHORE_API_KEY }}" },
+            { "name": "number", "value": "={{ $node[\"Fetch Resident Profile\"].json.resident.contact_number }}" },
+            { "name": "message", "value": "=⚠️ {{ $json.priority.toUpperCase() }} PRIORITY ADVISORY: {{ $json.title }} - {{ $json.content }}" },
+            { "name": "sendername", "value": "BRGY" }
+          ]
+        }
+      },
+      "id": "semaphore-sms",
+      "name": "Broadcast SMS via Semaphore",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [720, 180]
+    },
+    {
+      "parameters": {
+        "fromEmail": "announcements@barangay.gov.ph",
+        "toEmail": "={{ $node[\"Fetch Resident Profile\"].json.resident.email }}",
+        "subject": "=⚠️ {{ $json.priority.toUpperCase() }} Barangay Advisory: {{ $json.title }}",
+        "html": "=<h2>{{ $json.title }}</h2><p>Dear Barangay Resident,</p><p>{{ $json.content }}</p><br><p>Stay safe,<br>Your Barangay Council</p>",
+        "options": {}
+      },
+      "id": "smtp-email",
+      "name": "Broadcast SMTP Email",
+      "type": "n8n-nodes-base.email",
+      "typeVersion": 1,
+      "position": [720, 380]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:8000/api/v1/webhooks/log-result",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "X-Webhook-Secret", "value": "barangay_n8n_secret_2026" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"workflow_name\": \"announcement-blast\",\n  \"status\": \"success\",\n  \"payload\": {{ JSON.stringify($node[\"Laravel Webhook Trigger\"].json.body) }},\n  \"response\": \"Broadcast finished for \" + $node[\"Laravel Webhook Trigger\"].json.body.target_resident_ids.length + \" residents for announcement: \" + $node[\"Laravel Webhook Trigger\"].json.body.title\n}"
+      },
+      "id": "callback-node",
+      "name": "Log Result Callback",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [960, 300]
+    }
+  ],
+  "connections": {
+    "Laravel Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "Split into Loop Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split into Loop Items": {
+      "main": [
+        [
+          {
+            "node": "Fetch Resident Profile",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Resident Profile": {
+      "main": [
+        [
+          {
+            "node": "Broadcast SMS via Semaphore",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Broadcast SMTP Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Broadcast SMS via Semaphore": {
+      "main": [
+        [
+          {
+            "node": "Log Result Callback",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Broadcast SMTP Email": {
+      "main": [
+        [
+          {
+            "node": "Log Result Callback",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {}
+}
