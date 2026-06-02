@@ -36,6 +36,8 @@ class ResidentResource extends JsonResource
             'is_senior_citizen' => $this->is_senior_citizen,
             'photo_path' => $this->photo_path,
             'photo_url' => $this->photo_path ? asset('storage/' . $this->photo_path) : null,
+            'contact_number' => $this->contact_number,
+            'email' => $this->email,
             'created_by' => $this->created_by,
             'creator_name' => $this->creator?->full_name ?? 'System',
             'is_active' => $this->is_active,

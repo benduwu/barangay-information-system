@@ -74,7 +74,7 @@
       },
       "id": "smtp-email",
       "name": "Broadcast SMTP Email",
-      "type": "n8n-nodes-base.email",
+      "type": "n8n-nodes-base.emailSend",
       "typeVersion": 1,
       "position": [720, 380]
     },

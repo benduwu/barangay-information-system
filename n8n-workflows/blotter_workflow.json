@@ -51,7 +51,7 @@
       },
       "id": "filed-email",
       "name": "Officer Email: Filed",
-      "type": "n8n-nodes-base.email",
+      "type": "n8n-nodes-base.emailSend",
       "typeVersion": 1,
       "position": [560, 100]
     },
@@ -65,7 +65,7 @@
       },
       "id": "updated-email",
       "name": "Email: Under Investigation",
-      "type": "n8n-nodes-base.email",
+      "type": "n8n-nodes-base.emailSend",
       "typeVersion": 1,
       "position": [560, 260]
     },
@@ -79,7 +79,7 @@
       },
       "id": "settled-email",
       "name": "Email: Amicable Settlement",
-      "type": "n8n-nodes-base.email",
+      "type": "n8n-nodes-base.emailSend",
       "typeVersion": 1,
       "position": [560, 420]
     },

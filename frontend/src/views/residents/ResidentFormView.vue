@@ -115,6 +115,30 @@
                   v-model="form.occupation"
                 />
               </div>
+
+              <!-- Contact Number -->
+              <div class="col-md-6">
+                <label for="contactNumber" class="form-label">Contact Number <span class="text-muted">(optional)</span></label>
+                <input
+                  type="text"
+                  id="contactNumber"
+                  class="form-control"
+                  placeholder="e.g. 09123456789"
+                  v-model="form.contact_number"
+                />
+              </div>
+
+              <!-- Email Address -->
+              <div class="col-md-6">
+                <label for="email" class="form-label">Email Address <span class="text-muted">(optional)</span></label>
+                <input
+                  type="email"
+                  id="email"
+                  class="form-control"
+                  placeholder="e.g. juan@example.com"
+                  v-model="form.email"
+                />
+              </div>
             </div>
 
             <!-- Section 2: Affiliations & Households -->
@@ -239,6 +263,8 @@ const form = reactive({
   is_indigent: false,
   is_pwd: false,
   is_senior_citizen: false,
+  contact_number: '',
+  email: '',
 });
 
 // --- Methods ---
@@ -288,6 +314,8 @@ async function fetchResidentDetails() {
     form.is_indigent = resident.is_indigent;
     form.is_pwd = resident.is_pwd;
     form.is_senior_citizen = resident.is_senior_citizen;
+    form.contact_number = resident.contact_number || '';
+    form.email = resident.email || '';
     photoUrl.value = resident.photo_url;
   } catch (error) {
     errorMessage.value = 'Failed to load resident profile details.';

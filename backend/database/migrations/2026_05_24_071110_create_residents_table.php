@@ -26,6 +26,8 @@ return new class extends Migration
             $table->boolean('is_pwd')->default(false);
             $table->boolean('is_senior_citizen')->default(false);
             $table->string('photo_path')->nullable();
+            $table->string('contact_number', 30)->nullable();
+            $table->string('email')->nullable();
             $table->foreignId('created_by')->nullable()->constrained('users')->onDelete('set null');
             $table->boolean('is_active')->default(true);
             $table->timestamps();

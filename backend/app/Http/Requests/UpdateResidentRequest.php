@@ -35,6 +35,8 @@ class UpdateResidentRequest extends FormRequest
             'is_pwd' => ['sometimes', 'required', 'boolean'],
             'is_senior_citizen' => ['sometimes', 'required', 'boolean'],
             'is_active' => ['sometimes', 'required', 'boolean'],
+            'contact_number' => ['sometimes', 'nullable', 'string', 'max:30'],
+            'email' => ['sometimes', 'nullable', 'email', 'max:255'],
         ];
     }
 }

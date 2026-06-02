@@ -35,6 +35,8 @@ class StoreResidentRequest extends FormRequest
             'is_pwd' => ['required', 'boolean'],
             'is_senior_citizen' => ['required', 'boolean'],
             'is_active' => ['sometimes', 'boolean'],
+            'contact_number' => ['nullable', 'string', 'max:30'],
+            'email' => ['nullable', 'email', 'max:255'],
         ];
     }
 }

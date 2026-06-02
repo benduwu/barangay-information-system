@@ -42,6 +42,8 @@ class ResidentSeeder extends Seeder
             'is_senior_citizen' => false,
             'created_by' => $creatorId,
             'is_active' => true,
+            'contact_number' => '09123456789',
+            'email' => 'juan.delacruz@example.com',
         ]);
 
         GroupInfo::create([
@@ -65,6 +67,8 @@ class ResidentSeeder extends Seeder
             'is_senior_citizen' => false,
             'created_by' => $creatorId,
             'is_active' => true,
+            'contact_number' => '09187654321',
+            'email' => 'maria.delacruz@example.com',
         ]);
 
         GroupInfo::create([
@@ -88,6 +92,8 @@ class ResidentSeeder extends Seeder
             'is_senior_citizen' => false,
             'created_by' => $creatorId,
             'is_active' => true,
+            'contact_number' => '09223344556',
+            'email' => 'pedro.delacruz@example.com',
         ]);
 
         GroupInfo::create([
@@ -113,6 +119,8 @@ class ResidentSeeder extends Seeder
             'is_senior_citizen' => true,
             'created_by' => $creatorId,
             'is_active' => true,
+            'contact_number' => '09987654321',
+            'email' => 'alice.santos@example.com',
         ]);
 
         GroupInfo::create([
@@ -136,6 +144,8 @@ class ResidentSeeder extends Seeder
             'is_senior_citizen' => false,
             'created_by' => $creatorId,
             'is_active' => true,
+            'contact_number' => '09334455667',
+            'email' => 'bobby.santos@example.com',
         ]);
 
         GroupInfo::create([

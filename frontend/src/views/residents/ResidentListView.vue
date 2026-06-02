@@ -139,7 +139,11 @@
                     </div>
                     <div>
                       <div class="fw-bold text-dark">{{ resident.full_name }}</div>
-                      <div class="text-muted small" style="font-size: 0.75rem;">ID: #{{ resident.id }}</div>
+                      <div class="text-muted small" style="font-size: 0.75rem;">
+                        ID: #{{ resident.id }}
+                        <span v-if="resident.contact_number" class="ms-2 text-secondary">• <i class="bi bi-telephone-fill" style="font-size: 0.7rem;"></i> {{ resident.contact_number }}</span>
+                        <span v-if="resident.email" class="ms-2 text-secondary">• <i class="bi bi-envelope-fill" style="font-size: 0.7rem;"></i> {{ resident.email }}</span>
+                      </div>
                     </div>
                   </div>
                 </td>

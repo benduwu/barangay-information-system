@@ -28,6 +28,8 @@ class Resident extends Model
         'photo_path',
         'created_by',
         'is_active',
+        'contact_number',
+        'email',
     ];
 
     protected $casts = [

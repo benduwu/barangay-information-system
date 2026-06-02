@@ -124,6 +124,14 @@
               <div class="text-muted small" style="font-size: 0.75rem;">Occupation / Employment</div>
               <div class="fw-semibold text-dark" style="font-size: 0.9375rem;">{{ resident.occupation || 'Unspecified / None' }}</div>
             </div>
+            <div class="col-sm-6">
+              <div class="text-muted small" style="font-size: 0.75rem;">Contact Number</div>
+              <div class="fw-semibold text-dark" style="font-size: 0.9375rem;">{{ resident.contact_number || 'Not Provided' }}</div>
+            </div>
+            <div class="col-sm-6">
+              <div class="text-muted small" style="font-size: 0.75rem;">Email Address</div>
+              <div class="fw-semibold text-dark" style="font-size: 0.9375rem;">{{ resident.email || 'Not Provided' }}</div>
+            </div>
           </div>
         </div>
 

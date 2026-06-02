@@ -65,7 +65,7 @@
       },
       "id": "email-node",
       "name": "Send Welcome Email",
-      "type": "n8n-nodes-base.email",
+      "type": "n8n-nodes-base.emailSend",
       "typeVersion": 1,
       "position": [340, 380]
     },
